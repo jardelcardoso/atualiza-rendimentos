@@ -1,14 +1,13 @@
 import requests, bs4
 from datetime import datetime
-arquivo = open('resposta.log','w')
-arquivo.write("ULTIMA EXECUCAO "+datetime.now().today().strftime('%d/%m/%Y %H:%M')+"\n")
-def getFIIs():
+
+
+def getFIIs(arquivo):
     resFII = requests.get('https://script.google.com/macros/s/AKfycbxtvypvh4CWfOFQT0O1Xfn1DKEdAI0MSU0_1Dv7VQUN803_fww/exec')
     resFII.raise_for_status()
     arquivo.write(resFII.text+"\n")
     return resFII.text.split(',')
 
-fiis = getFIIs()
 
 def atualizaValorRendimento(fii,data,valor):
     parametros = '?fii='+fii+'&date='+data+'&vlr='+valor
@@ -16,7 +15,7 @@ def atualizaValorRendimento(fii,data,valor):
     res = requests.get(url)
     res.raise_for_status()
 
-def processa_response(resp,fii):
+def processa_response(resp,fii,arquivo):
     resp.raise_for_status()
     noStarchSoup = bs4.BeautifulSoup(resp.text,features="html.parser")
     tabela = noStarchSoup.select('#last-revenues--table')
@@ -26,12 +25,18 @@ def processa_response(resp,fii):
     arquivo.write(fii+" "+tds[1].text+" "+tds[4].text+"\n")
     atualizaValorRendimento(fii,tds[1].text,tds[4].text)
 
-for fii in fiis:
-    url = 'https://fiis.com.br/'+fii
-    res = requests.get(url)
-    processa_response(res,fii)
+def exec_busca():
+    arquivo = open('resposta.log','w')
+    arquivo.write("ULTIMA EXECUCAO "+datetime.now().today().strftime('%d/%m/%Y %H:%M')+"\n")
+    fiis = getFIIs(arquivo)
+    for fii in fiis:
+        url = 'https://fiis.com.br/'+fii
+        res = requests.get(url)
+        processa_response(res,fii,arquivo)
+    arquivo.close()
 
-arquivo.close()
+#exec_busca()
+
 
 
 
